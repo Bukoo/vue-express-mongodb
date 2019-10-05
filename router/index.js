@@ -1,8 +1,16 @@
 const express = require('express')
 const router = express.Router()
 
-router.get('/', (req,res) => {
-  res.send('Hello Express!')
-})
+const Record = require('../model')
 
-module.exports = router
+// 提交个人信息
+router.post('/api/record', (req, res) => {
+  Record.create(req.body, (err, result) => {
+    if (err) {
+      res.json(err)
+    } else {
+      res.json(result)
+    }
+  })
+})
+module.exports = router;

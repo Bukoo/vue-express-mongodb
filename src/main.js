@@ -1,19 +1,18 @@
 import Vue from 'vue'
 import App from './App'
-import toastr from 'toastr'
-import MuseUI from 'muse-ui'
-import Vodal from 'vodal'
-import axios from 'axios'
-import router from './router'
+import toastr from 'toastr'  // jQuery 通知插件
 import 'toastr/build/toastr.min.css'
-import 'muse-ui/dist/muse-ui.css'
-import './assets/icon.css'
-import 'vodal/fade.css'
+import Antd from 'ant-design-vue'
+import 'ant-design-vue/dist/antd.css'
+import Faker from 'vue-faker'
+// import './assets/icon.css'
+import router from './router'
+import axios from 'axios'
 
-Vue.use(MuseUI)
+Vue.use(Antd)
+Vue.use(Faker, {locale: 'zh_CN'})
 Vue.prototype.$http = axios
 Vue.prototype.toastr = toastr
-Vue.component(Vodal.name,Vodal)
 
 toastr.options = {
   "closeButton": true,

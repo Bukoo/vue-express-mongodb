@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const Movie = require('../models/movie')
+const Movie = require('../model')
 
 // 查询所有电影
 router.get('/movie', (req, res) => {

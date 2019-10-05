@@ -181,22 +181,4 @@ export default {
 </script>
 
 <style lang="css">
-.mu-th{
-  text-align: center !important;
-}
-.mu-td{
-  text-align: center !important;
-}
-  .movie-poster{
-    width: 80px;
-    padding: 4px 0;
-  }
-  .movie-introduction{
-    white-space: normal;
-    padding:4px 4px;
-    letter-spacing: 1px;
-    font-size: 14px;
-    text-align: left;
-    text-indent: 2em;
-  }
 </style>
