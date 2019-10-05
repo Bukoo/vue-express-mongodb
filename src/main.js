@@ -8,11 +8,14 @@ import Faker from 'vue-faker'
 // import './assets/icon.css'
 import router from './router'
 import axios from 'axios'
+import echarts from 'echarts'
+
 
 Vue.use(Antd)
 Vue.use(Faker, {locale: 'zh_CN'})
 Vue.prototype.$http = axios
 Vue.prototype.toastr = toastr
+Vue.prototype.$echarts = echarts 
 
 toastr.options = {
   "closeButton": true,

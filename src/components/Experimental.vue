@@ -32,7 +32,7 @@
               <!-- 类别（主体）与指标 -->
               <a-col :span="8">
                 <a-col :span="12">
-                  <a-col :span="24" class="op-attr"><span class="required" style="color:#1890ff">主体</span></a-col>
+                  <a-col :span="24" class="op-attr"><span class="required" style="color:#52c41a">主体</span></a-col>
                   <a-select
                     v-model="operation.ops[operation.currentIdx].entity"
                     :defaultValue="entities[0]"
@@ -96,7 +96,7 @@
               <!-- 范围 -->
               <a-col :span="24">
                 <a-col :span="24" class="op-attr special">
-                  <span style="color:#52c41a">范围：</span>
+                  <span>范围：</span>
                   <template v-for="(r,i) in operation.ops[operation.currentIdx].range.chosenAttr">
                     <a-tooltip
                       v-if="summaryRangeDispaly[i].length > 8"
@@ -131,18 +131,18 @@
               </a-col>
             </a-row>
             <a-divider orientation="left">得到的数据</a-divider>
-            <a-row style="line-height:32px;" class="block">
+            <a-row id="display" class="block">
               <span class="script" v-if="ifNotOperation">（请选择你感兴趣的对象&指标）</span>
               <span v-else class="script">
                 <!-- xx范围 -->
                 <span v-if="opRangeDisplay[0] != '所有'">与</span>
-                <a-tag color="green" v-for="(range,i) in opRangeDisplay">
+                <a-tag v-for="(range,i) in opRangeDisplay">
                   {{ range }}
                 </a-tag>
                 <span v-if="opRangeDisplay[0] != '所有'">有关的</span>
                 <span v-else>的</span>
                 <!-- xx对象 -->
-                <a-tag color="blue">{{ opEntityDisplay }}</a-tag>
+                <a-tag color="green">{{ opEntityDisplay }}</a-tag>
                 <!-- xx分组 -->
                 <span v-if="opGroupDisplay.length != 0">分别在</span>
                 <a-tag color="purple" v-if="opGroupDisplay.legnth != 0" v-for="group in opGroupDisplay">{{ group }}</a-tag>
@@ -156,8 +156,9 @@
             </a-row>
           <a-divider orientation="left">可视化区</a-divider>
           <a-row id="visualization" class="block">
-            
-            <!-- <span class="title">可视化区域</span> -->
+            <a-col :span="24">
+              <div id="chart" style="height: 380px; width: 100%;"></div>
+            </a-col>
           </a-row>
         </a-col>
       </a-row>
@@ -176,7 +177,7 @@ export default {
       experiment: {
         index: 0,
         tasks: [{
-          content: '中国人民中女性平均每天花在照顾孩子上的时间是多少?'
+          content: '职级是黄金、白银的老师的课堂教学态度值，在哪个年级最高？'
         }, {
           content: 'fsdfsdfsdffffffffffffffffff'
         }]
@@ -216,17 +217,17 @@ export default {
           value: '教学态度',
           valueCal: '平均',
           range: {
-            chosenAttr: ['职级', '学生年龄'],
+            chosenAttr: ['职级'],
             detail: {
               '团队': [],
               '职级': ['黄金', '白银'],
               '时段': [],
               '店面': [],
-              '学生年龄': ['6岁'],
+              '学生年龄': [],
               '年级': []
             }
           },
-          group: ['职级']
+          group: ['年级']
         }]
       },
       selectedTags: []
@@ -358,6 +359,34 @@ export default {
     }
   },
   methods: {
+    // echarts demo
+    initEcharts() {
+      // 基于准备好的dom，初始化echarts实例
+      let myChart = this.$echarts.init(document.getElementById('chart'));
+
+      // 指定图表的配置项和数据
+      let option = {
+        title: {
+          text: '老师平均教学态度',
+        },
+        tooltip: {},
+        legend: {
+          show: false
+        },
+        xAxis: {
+            data: ["一年级","二年级","三年级","四年级","五年级","六年级"]
+        },
+        yAxis: {},
+        series: [{
+            name: '老师平均教学态度',
+            type: 'bar',
+            data: [56.8, 98.5, 67.8, 86.4, 90.3, 99.2]
+        }]
+      };
+
+      // 使用刚指定的配置项和数据显示图表。
+      myChart.setOption(option);
+    },
     // 检查属性和对象是否有关
     ifRelated(attr, entity) {
       let relation = this.relation.find(r => r.entity == entity);
@@ -455,6 +484,7 @@ export default {
     },
   },
   mounted() {
+    this.initEcharts();
   }
 }
 </script>
@@ -545,5 +575,13 @@ export default {
 .special {
   margin-top: 16px;
   line-height: 24px;
+}
+#display .ant-tag {
+  font-weight: 600;
+  font-size: 12px;
+}
+#display span {
+  line-height: 22px;
+  font-size: 14px;
 }
 </style>
