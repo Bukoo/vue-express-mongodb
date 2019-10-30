@@ -4,26 +4,25 @@
       <a-row id="before-start">
         <a-divider orientation="left">实验介绍</a-divider>
         <a-col id="introduction" :span="24">
-          <p><span class="outstanding">Hi {{user.name}}</span> ，这次实验希望你能通过下方的可视化工具来完成6个数据分析任务，得到给出的问题的正确答案。这当然是建立在你对数据集内容有一定了解的基础上。</p>
-          <p>你可以先花5分钟时间，熟悉界面上的操作。当你觉得你准备好了，请点击左下方的<a-tag color="blue">开始实验</a-tag>按钮，开始实验。</p>
-          <p>实验开始后将在左下方出现任务内容，填写你认为正确的结论。点击<a-tag color="blue">上一个</a-tag>、<a-tag color="blue">下一个</a-tag>按钮，回看前后任务内容和修改结论。</p>
-          <p>当完成最后一个任务，点击<a-tag color="red">提交结论</a-tag>按钮，结束实验。</p>
+          <p><span class="outstanding">Hi {{user.name}}</span> ，这次实验希望你能通过下方的可视化工具完成5个数据分析任务，得到给出的问题的正确答案。如果不熟悉数据集内容可<a-button type="link" size="small" @click="downloadDataset">下载数据集</a-button>查看。</p>
+          <p><span style="color: #f5222d">进入本页后，请不要刷新页面！</span>请先花5分钟左右时间，尝试理解界面上的操作。当你觉得你准备好了，请点击左下方的<a-tag color="blue">开始实验</a-tag>按钮，开始实验。</p>
+          <p>实验开始后将在左下方出现任务内容，填写你认为正确的结论，<a-tag color="blue">提交结论</a-tag>后不可修改，自动进入下一个任务，每个任务最长时限为5min。</p><p>当完成最后一个任务，点击<a-tag color="red">提交并结束实验</a-tag>按钮，结束实验。</p>
+          <!-- <p></p> -->
         </a-col>
       </a-row>
       <a-row type="flex" align="top">
         <a-col :span="5" class="left">
           <a-divider orientation="left" v-if="!statusDisplay.start">任务（{{experiment.index+1}}/{{experiment.tasks.length}}）</a-divider>
           <a-row id="task" class="block" v-if="!statusDisplay.start">
-            <p>{{ experiment.tasks[experiment.index].content }}</p>
+            <p>{{ experiment.tasks[experiment.index] }}</p>
           </a-row>
           <a-col id="conclusion" class="block" :span="8" v-if="statusDisplay.start">
             <a-button type="primary" size="large" class="start" @click="startExperiment">开始实验</a-button>
           </a-col>
           <a-col id="conclusion" class="block" :span="24" v-if="statusDisplay.conclusion">
-            <a-textarea placeholder="结论是……" :rows="3" :disabled="statusDisplay.end"></a-textarea>
-            <a-button type="primary" class="last" :disabled="experiment.index == 0" @click="handleTaskChange('last')">上一个</a-button>
-            <a-button type="primary" class="next" v-if="experiment.index != experiment.tasks.length-1" @click="handleTaskChange('next')">下一个</a-button>
-            <a-button type="danger" class="finish" v-if="experiment.index == experiment.tasks.length-1" @click="endExperiment">提交结论</a-button>
+            <a-textarea placeholder="结论是……" :rows="3" :disabled="statusDisplay.end" :autosize="{ minRows: 2, maxRows: 6 }" v-model="answer"></a-textarea>
+            <a-button type="primary" class="next" v-if="experiment.index != experiment.tasks.length-1" @click="handleTaskChange('next')">提交结论</a-button>
+            <a-button type="danger" class="finish" v-if="experiment.index == experiment.tasks.length-1" :disabled="statusDisplay.end" @click="endExperiment">提交并结束实验</a-button>
           </a-col>
         </a-col>
         <a-col :span="19" class="right">
@@ -32,7 +31,7 @@
               <!-- 类别（主体）与指标 -->
               <a-col :span="8">
                 <a-col :span="12">
-                  <a-col :span="24" class="op-attr"><span class="required" style="color:#52c41a">主体</span></a-col>
+                  <a-col :span="24" class="op-attr"><span class="required" style="color:#52c41a">对象</span></a-col>
                   <a-select
                     v-model="operation.ops[operation.currentIdx].entity"
                     :defaultValue="entities[0]"
@@ -99,22 +98,22 @@
                   <span>范围：</span>
                   <template v-for="(r,i) in operation.ops[operation.currentIdx].range.chosenAttr">
                     <a-tooltip
-                      v-if="summaryRangeDispaly[i].length > 8"
-                      :key="summaryRangeDispaly[i]"
-                      :title="summaryRangeDispaly[i]"
+                      v-if="summaryRangeDisplay[i].length > 8"
+                      :key="summaryRangeDisplay[i]"
+                      :title="summaryRangeDisplay[i]"
                     >
                       <a-tag 
                         closable
-                        @close="handleCloseRange(summaryRangeDispaly[i])"
+                        @close="handleCloseRange(summaryRangeDisplay[i])"
                       >
-                        {{summaryRangeDispaly[i].slice(0,8)}}…
+                        {{summaryRangeDisplay[i].slice(0,8)}}…
                       </a-tag>
                     </a-tooltip>
                     <a-tag
                       v-else
                       closable
-                      @close="handleCloseRange(summaryRangeDispaly[i])"
-                    > {{summaryRangeDispaly[i]}}</a-tag>
+                      @close="handleCloseRange(summaryRangeDisplay[i])"
+                    > {{summaryRangeDisplay[i]}}</a-tag>
                   </template>
                 </a-col>
                 <a-col :span="24" class="range">
@@ -132,27 +131,32 @@
             </a-row>
             <a-divider orientation="left">得到的数据</a-divider>
             <a-row id="display" class="block">
-              <span class="script" v-if="ifNotOperation">（请选择你感兴趣的对象&指标）</span>
-              <span v-else class="script">
-                <!-- xx范围 -->
-                <span v-if="opRangeDisplay[0] != '所有'">与</span>
-                <a-tag v-for="(range,i) in opRangeDisplay">
-                  {{ range }}
-                </a-tag>
-                <span v-if="opRangeDisplay[0] != '所有'">有关的</span>
-                <span v-else>的</span>
-                <!-- xx对象 -->
-                <a-tag color="green">{{ opEntityDisplay }}</a-tag>
-                <!-- xx分组 -->
-                <span v-if="opGroupDisplay.length != 0">分别在</span>
-                <a-tag color="purple" v-if="opGroupDisplay.legnth != 0" v-for="group in opGroupDisplay">{{ group }}</a-tag>
-                <span>的</span>
-                <!-- xx聚合方式 -->
-                <a-tag color="orange">{{ opValueCalDisplay }}</a-tag>
-                <!-- xx指标 -->
-                <a-tag color="red">{{ opValueDisplay }}</a-tag>
-                <span>值</span>
-              </span>
+              <a-col :span="22">
+                <span class="script" v-if="ifNotOperation">（请选择你感兴趣的对象&指标）</span>
+                <span v-else class="script">
+                  <!-- xx范围 -->
+                  <span v-if="opRangeDisplay[0] != '所有'">与</span>
+                  <a-tag v-for="(range,i) in opRangeDisplay">
+                    {{ range }}
+                  </a-tag>
+                  <span v-if="opRangeDisplay[0] != '所有'">有关的</span>
+                  <span v-else>的</span>
+                  <!-- xx对象 -->
+                  <a-tag color="green">{{ opEntityDisplay }}</a-tag>
+                  <!-- xx分组 -->
+                  <span v-if="opGroupDisplay.length != 0">分别在</span>
+                  <a-tag color="purple" v-if="opGroupDisplay.length != 0" v-for="group in opGroupDisplay">{{ group }}</a-tag>
+                  <span>的</span>
+                  <!-- xx聚合方式 -->
+                  <a-tag color="orange">{{ opValueCalDisplay }}</a-tag>
+                  <!-- xx指标 -->
+                  <a-tag color="red">{{ opValueDisplay }}</a-tag>
+                  <span>值</span>
+                </span>
+              </a-col> 
+              <a-col :span="2">
+                <a-button style="" type="primary"> 查询 </a-button>
+              </a-col>
             </a-row>
           <a-divider orientation="left">可视化区</a-divider>
           <a-row id="visualization" class="block">
@@ -167,79 +171,81 @@
 </template>
 
 <script>
+import API from '../api';
+
 export default {
   data() {
     return {
       user: null,
       dataset: null,
       status: 'beforeStart', 
-      // status: 'processing', 
+      tasks: [],
       experiment: {
         index: 0,
-        tasks: [{
-          content: '职级是黄金、白银的老师的课堂教学态度值，在哪个年级最高？'
-        }, {
-          content: 'fsdfsdfsdffffffffffffffffff'
-        }]
+        tasks: [],
+        // start, end, dur, answer, clickCount
+        taskRecords: []
       },
       relation: [{
-        entity: '学生',
-        attrs: ['店面', '学生年龄', '年级']
-      }, {
-        entity: '老师',
-        attrs: ['职级', '团队']
-      }, {
-        entity: '课堂',
-        attrs: ['时段']
-      }, {
-        entity: '时间',
-        attrs: ['年', '月', '周', '日']
+        entity: '客户',
+        attrs: ['年龄段', '职业', '婚姻状况', '贷款', '存款', '房产', '教育水平']
       }],
-      entities: ['老师', '学生', '课堂'],
+      entities: ['客户'],
       values: {
-        '老师': ['教学态度', '教学行为', '课堂激励', '行为规范'],
-        '学生': ['课堂态度', '课堂行为', '专注程度', '活跃程度'],
-        '课堂': ['数量']
+        '客户': ['存款期限', '账户余额', '参与营销活动次数'],
       },
       valueCals: ['平均', '总计'],
       ranges: {
-        '团队': ['Team-1', 'Team-2', 'Team-3', 'Team-4'],
-        '职级': ['钻石', '黄金', '白银'],
-        '时段': ['8:00~8:40', '8:40~9:20', '9:20~10:00', '10:00~10:40', '10:40~11:20', '11:20~12:00'],
-        '店面': ['广州南沙店', '广州天河店', '深圳南山店', '广州越秀店', '广州海珠店'],
-        '学生年龄': ['6岁','7岁','8岁','9岁','10岁','11岁'],
-        '年级': ['一', '二', '三', '四', '五', '六']
+        '婚姻状况': ['已婚', '单身', '离婚'],
+        '职业': ['主管', '技术员', '服务业', '女佣', '企业家', '个体户', '管理', '学生', '失业', '退休', '蓝领'],
+        '房产': ['有', '无'],
+        '贷款': ['有', '无'],
+        '存款': ['有', '无'],
+        '教育水平': ['初等教育', '中等教育', '高等教育'],
+        '年龄段': [[20,30], [30,40], [40,50], [50,60]]
       },
       operation: {
         currentIdx: 0,
         ops: [{
-          entity: '老师',  // 为空时 ‘’
-          value: '教学态度',
+          entity: '客户',  // 为空时 ‘’
+          value: '存款期限',
           valueCal: '平均',
           range: {
-            chosenAttr: ['职级'],
+            chosenAttr: ['职业'],
             detail: {
-              '团队': [],
-              '职级': ['黄金', '白银'],
-              '时段': [],
-              '店面': [],
-              '学生年龄': [],
-              '年级': []
+              '婚姻状况': [],
+              '职业': ['蓝领'],
+              '房产': [],
+              '贷款': [],
+              '存款': [],
+              '教育水平': [],
+              '年龄段': []
             }
           },
-          group: ['年级']
+          group: ['婚姻状况']
         }]
       },
-      selectedTags: []
+      selectedTags: [],
+      eDuration: 0,
+      duration: 0,
+      eClickCount: 0,
+      clickCount: 0,
+      timer: null,
+      answer: ''
     };
   },
   created() {
-    this.initUserInfo();
+    // if (!this.$route.params.user) {
+    //   this.$router.push({
+    //     name: 'home'
+    //   })
+    // }
+    this.initRecordInfo();
     this.initDataset();
   },
   computed: {
     // 范围 的 已选项展示
-    summaryRangeDispaly() {
+    summaryRangeDisplay() {
       let op = this.operation.ops[this.operation.currentIdx];
       let res = [];
       op.range.chosenAttr.forEach(attr => {
@@ -309,17 +315,18 @@ export default {
       let ranges = [];
       let op = this.operation.ops[this.operation.currentIdx];
       if (op.range.chosenAttr.length == 0) {
+        // 没有选择范围，显示“所有”
         ranges = ['所有'];
       } else {
         op.range.chosenAttr.forEach(attr => {
           let values = op.range.detail[attr];
-          // 分段
+          // 同一维度的不同取值间插入顿号“、”
           let seg = '';
           values.forEach(item => {
             seg += `${item}、`;
           });
           seg = seg.slice(0, seg.length-1);
-          
+          // 如果所选维度归属模型和“对象”不同
           if (!this.ifRelated(attr, op.entity)) {
             let e = this.findEntityByAttr(attr);
             seg = `${seg}${attr}的${e}`;
@@ -337,6 +344,7 @@ export default {
       if (!op.entity && !op.value && !op.valueCal && !op.groups[0] && !op.ranges) return true;
       else return false;
     },
+    // 废弃
     operationDisplay() {
       if (this.operation.ops.length == 0) {
         return '（请选择你感兴趣的对象&指标）'
@@ -366,21 +374,17 @@ export default {
 
       // 指定图表的配置项和数据
       let option = {
-        title: {
-          text: '老师平均教学态度',
-        },
+        title: { text: '',},
         tooltip: {},
-        legend: {
-          show: false
-        },
+        legend: { show: false },
         xAxis: {
-            data: ["一年级","二年级","三年级","四年级","五年级","六年级"]
+          data: ["一年级","二年级","三年级","四年级","五年级","六年级"]
         },
         yAxis: {},
         series: [{
-            name: '老师平均教学态度',
-            type: 'bar',
-            data: [56.8, 98.5, 67.8, 86.4, 90.3, 99.2]
+          name: '',
+          type: 'bar',
+          data: [56.8, 98.5, 67.8, 86.4, 90.3, 99.2]
         }]
       };
 
@@ -399,14 +403,15 @@ export default {
       else return -1;
     },
     // 页面初始化：用户信息随机生成
-    initUserInfo() {
+    initRecordInfo() {
       if (this.$route.params && this.$route.params.user) {
         this.user = this.$route.params.user;
       } else {
         this.user = {
           name: this.$faker().name.findName().replace(/\s*/g,""),
           age: Math.floor(Math.random() * 40),
-          major: this.$faker().name.jobType()
+          major: this.$faker().name.jobType(),
+          _id: '5db71dcfc4b7fd92f30da095'
         }
       }
     },
@@ -414,28 +419,40 @@ export default {
     initDataset() {
       if (this.$route.params && this.$route.params.dataset) {
         this.dataset = this.$route.params.dataset;
+        this.initTasks();
       } else {
-        let i = Math.floor(Math.random() * 5);
-        // 拉数据集数据,并赋值this.dataset
+        let topic = 'financial';
+        let url = API.dataset.retrieve(topic);
+        this.$http.get(url)
+          .then((res, error) => {
+            if (error) {
+              this.$message.error(`抱歉，出现问题：${error}`);
+            } else {
+              this.dataset = res.data[0];
+              this.initTasks();
+            }
+          })
       }
     },
+    // 拉取任务信息
+
     startExperiment() {
       const that = this;
       this.$confirm({
         title: '确认开始实验吗？',
         content: '开始实验后，不可中途停止哦',
         onOk() {
-          that.status = 'processing'
+          that.status = 'processing',
+          that.timer = setInterval(() => {
+            that.duration++;
+          }, 1000);
         },
         onCancel() {}
       })
     },
     handleTaskChange(mode) {
-      if (mode == 'last') {
-        this.experiment.index--;
-      } else {
-        this.experiment.index++;
-      }
+      this.experiment.index++;
+      this.updateTaskRecord();
     },
     endExperiment() {
       const that = this;
@@ -444,15 +461,32 @@ export default {
         content: '实验结束后，将不能再进行操作',
         onOk() {
           that.status = 'finish';
+          clearInterval(that.timer);
+          let body = {
+            wholeRecord: {
+              duration: that.eDuration + that.duration,
+              clickCount: that.eClickCount + that.clickCount
+            },
+            taskRecord: {
+              duration: that.duration,
+              clickCount: that.clickCount,
+              answer: that.answer
+            }
+          };
+          let url = API.experiment.update(that.user._id);
+          that.$http.post(url, body)
+            .then((res, error) => {
+              if (error) {
+                that.$message.error(error);
+              } else {
+                that.$message.success('已成功提交实验数据！实验已结束。');
+              }
+            })
         },
         onCancel() {}
       })
     },
-    // 重现操作
-    replay(index) {
-
-    },
-    // operation的操作函数
+    // ========================== operation的操作函数
     handleEntityChange(value) {
       this.operation.ops[this.operation.currentIdx].value = this.values[value][0];
     },
@@ -481,6 +515,60 @@ export default {
       let idx = range.chosenAttr.findIndex(item => item == attr);
       range.chosenAttr.splice(idx, 1);
       range.detail[attr] = [];
+    },
+    // 提交结论
+    updateTaskRecord() {
+      clearInterval(this.timer);
+      let body = {
+        duration: this.duration,
+        answer: this.answer,
+        clickCount: this.clickCount,
+      };
+      let url = API.record.update(this.user._id);
+      this.$http.post(url, body)
+        .then((res, error) => {
+          if (error) {
+            this.$message.error(error);
+          } else {
+            this.eDuration = this.eDuration + this.duration;
+            this.eClickCount = this.eClickCount + this.clickCount;
+            this.experiment.taskRecords.push({
+              answer: this.answer,
+              duration: `${this.duration}秒`,
+              clickCount: `${this.clickCount}次`
+            })
+            this.duration = 0;
+            this.answer = '';
+            this.clickCount = 0;
+            this.$message.success('提交结论成功！');
+            this.timer = setInterval(() => {
+              this.duration++;
+            }, 1000);
+          }
+        })
+    },
+    downloadDataset() {
+      let name = this.$route.dataset.name;
+      let url = `/api/download/${name}`;
+      this.$http.get(url) 
+        .then((res, error) => {
+          if (error) {
+            this.$message.error(`抱歉，出现问题：${error}`);
+          } else {
+            window.open(`/api/download/${name}`);
+          }
+        })
+    },
+    initTasks() {
+      let url = API.task.retrieve(this.dataset.topic);
+      this.$http.get(url)
+        .then((res, error) => {
+          if (error) {
+            this.$message.error(`抱歉，出现问题：${error}`);
+          } else {
+            this.experiment.tasks = res.data[0].questions;
+          }
+        })
     },
   },
   mounted() {
@@ -583,5 +671,8 @@ export default {
 #display span {
   line-height: 22px;
   font-size: 14px;
+}
+.script span, .script .ant-tag {
+  margin-bottom: 8px !important;
 }
 </style>

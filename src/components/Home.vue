@@ -5,7 +5,7 @@
       <a-col>
         <p id="welcome">Welcome！请先提交个人信息，待下方选项激活后，选择你<span style="font-weight: bolder; color: #2794ff">最熟悉</span>
           <a-tooltip :title="description"><a-icon type="question-circle" theme="twoTone" twoToneColor="#2794ff" /></a-tooltip>
-          的业务数据集，使用预览或下载功能熟悉数据集内容，熟悉完成后可进入对应实验界面：）
+          的业务数据集，使用下载功能熟悉数据集内容，熟悉完成后可进入对应实验界面：）
         </p>
       </a-col>
     </a-row>
@@ -64,8 +64,9 @@
       <span class="title">（2）选择数据集：</span>
       <a-radio-group class="datasets" name="datasets" v-model="datasets.chosenIndex">
         <div class="dataset" v-for="(dataset,index) in datasets.meta">
-          <a-radio :value="index">{{ dataset.title }}</a-radio>
-          <a href="/public/test.xlsx" download="test.xlsx"><a-icon type="download"></a-icon></a>
+          <a-radio :value="index">{{ dataset.display }}</a-radio>
+          <a-button type="link" @click="downloadDataset(dataset.name)">下载</a-button>
+          <!-- <a :href="dataset.filepath" :download="dataset.filename"><a-icon type="download"></a-icon></a> -->
         </div>
       </a-radio-group>
       <span class="title">（3）进入实验：</span>
@@ -78,8 +79,8 @@
           </a-card>
         </a-list-item>
       </a-list>
-      <a-modal :visible="modal.isVisible" :title="modal.title" :closable="false">
-        <p>您选择了“{{ datasets.meta[datasets.chosenIndex].title }}”数据集。</p>
+      <a-modal v-if="modal.isVisible" :visible="modal.isVisible" :title="modal.title" :closable="false">
+        <p>您选择了“{{ datasets.meta[datasets.chosenIndex].display }}”数据集。</p>
         <p>如果已经对数据集中数据属性基本熟悉，那么可以开始了！</p>
         <p>如果还不太熟悉，为了保证实验效果，希望您使用预览或下载功能多熟悉一下数据集内容再开始：）</p>
         <template slot="footer">
@@ -111,17 +112,7 @@ export default {
       },
       datasets: {
         chosenIndex: 0,
-        meta: [{
-          title: '主题：互联网'
-        },{
-          title: '主题：民生'
-        },{
-          title: '主题：金融'
-        },{
-          title: '主题：美食'
-        },{
-          title: '主题：游戏'
-        },]
+        meta: []
       },
       description: '5个业务数据集中，您本人对业务相对最熟悉的那个',
       formLayout: 'inline',
@@ -164,10 +155,7 @@ export default {
         name: this.chosenGroup,
         params: {
           user: this.user, 
-          dataset: {
-            title: this.datasets.meta[this.datasets.chosenIndex].title,
-            index: this.datasets.chosenIndex
-          }
+          dataset: this.datasets.meta[this.datasets.chosenIndex]
         }
       })
     },
@@ -179,7 +167,7 @@ export default {
       e.preventDefault();
        this.form.validateFields((err, values) => {
         if (!err) {
-          let url = API.createUser();
+          let url = API.record.create();
           this.$http.post(url, values)
             .then((res,error) => {
               if (error) {
@@ -193,7 +181,32 @@ export default {
             })
         }
       });
+    },
+    initDatasets() {
+      let url = API.dataset.retrieve();
+      this.$http.get(url)
+        .then((res, error) => {
+          if (error) {
+            this.$mess.error(`抱歉，出现问题：${error}`);
+          } else {
+            this.datasets.meta = res.data;
+          }
+        })
+    },
+    downloadDataset(name) {
+      let url = `/api/download/${name}`;
+      this.$http.get(url) 
+        .then((res, error) => {
+          if (error) {
+            this.$mess.error(`抱歉，出现问题：${error}`);
+          } else {
+            window.open(`/api/download/${name}`);
+          }
+        })
     }
+  },
+  beforeMount() {
+    this.initDatasets();
   }
 }
 </script>
